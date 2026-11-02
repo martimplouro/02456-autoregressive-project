@@ -1,0 +1,1 @@
+from protgen.models import MLP

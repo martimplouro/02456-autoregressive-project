@@ -1,56 +1,57 @@
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 
-def generate(model, max_length=127, temperature=1.0):
 
-    model.eval()
+class MLP(nn.Module):
 
-    device = next(model.parameters()).device
+    def __init__(
+        self,
+        vocab_size=23, #numero de aminoacidos que podemos prever mais o start, end e o padding
+        embedding_dim=32, #tem a ver com embedding
+        family_embedding_dim=8,
+        num_families=3,
+        context_size=3, #numero de aminoacidos que vamos usar para prever o proximo
+        hidden_dim=128 #numero de neuronios
+    ):
+        super().__init__()
 
-    sequence = torch.tensor(
-        [[1]],  # BOS
-        dtype=torch.long,
-        device=device
-    )
+        self.context_size = context_size
 
-    with torch.no_grad():
+        self.embedding = nn.Embedding( #o embedding faz com que a nn nao use relacoes numericas entre os tokens dos aminoacidos
+            vocab_size,                #tipo 3(A) < 4(C)
+            embedding_dim,
+            padding_idx=0
+        )
 
-        for _ in range(max_length):
+        self.family_embedding = nn.Embedding(
+            num_families,
+            family_embedding_dim
+        )
 
-            # Use only the previous context_size tokens
-            context = sequence[:, -model.context_size:]
+        input_dim = context_size * embedding_dim + family_embedding_dim
 
-            # Pad context on the left if necessary
-            if context.shape[1] < model.context_size:
-                context = F.pad(
-                    context,
-                    (model.context_size - context.shape[1], 0),
-                    value=0
-                )
+        self.fc1 = nn.Linear(
+            input_dim,
+            hidden_dim
+        )   
 
-            logits_gen, _ = model(context)
+        self.fc2 = nn.Linear(
+            hidden_dim, vocab_size
+        )
 
-            # Predictions at the last position
-            logits = logits_gen[:, -1, :]
+    def forward(self, x, family):
 
-            # Temperature controls sampling randomness
-            probabilities = F.softmax(
-                logits / temperature,
-                dim=-1
-            )
+        x = self.embedding(x)
 
-            next_token = torch.multinomial(
-                probabilities,
-                num_samples=1
-            )
+        x = x.reshape(x.shape[0], -1)
 
-            if next_token.item() == 2:  # EOS
-                break
+        family = self.family_embedding(family)
 
-            sequence = torch.cat(
-                [sequence, next_token],
-                dim=1
-            )
+        x = torch.cat((x, family), dim=1)
 
-    # Convert token IDs back into amino acids
-    return sequence
+        x = F.relu(self.fc1(x))
+
+        logits = self.fc2(x)
+
+        return logits
