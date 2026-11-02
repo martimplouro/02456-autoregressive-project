@@ -1,2 +1,1 @@
 print("asmfamfslamfl")
-print("maricas")
