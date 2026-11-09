@@ -6,7 +6,7 @@ from torch.utils.data import DataLoader
 
 from protgen.data import ProteinDataset
 from protgen.models import GRULanguageModel
-
+from time import time
 
 # Configuration
 BATCH_SIZE = 32
@@ -74,11 +74,15 @@ for epoch in range(NUM_EPOCHS):
 
     model.train()
 
+
     total_train_loss = 0
     total_train_tokens = 0
 
+    print(len(train_loader))
+    run = 0
     for x, x_shifted, y, length in train_loader:
-
+        run += 1
+        print(run)
         x = x.to(DEVICE)
         x_shifted = x_shifted.to(DEVICE)
         y = y.to(DEVICE)
