@@ -55,3 +55,10 @@ class MLP(nn.Module):
         logits = self.fc2(x)
 
         return logits
+
+
+model = MLP()
+x = torch.randint(1, 23, (4, 3))
+family = torch.randint(0, 3, (4,))
+logits = model(x, family)
+print(logits.shape)  # expect torch.Size([4, 23])
