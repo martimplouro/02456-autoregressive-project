@@ -1,10 +1,11 @@
-
 import torch
 import torch.nn as nn
+import pandas as pd
 from torch.utils.data import DataLoader
 
 from protgen.data import ProteinDataset
 from protgen.models import MLP
+from protgen.models import GRULanguageModel
 
 BATCH_SIZE = 32
 NUM_EPOCHS = 20
@@ -24,8 +25,8 @@ DEVICE = torch.device(
 print(f"Using device: {DEVICE}")
 
 
-train_dataset = ProteinDataset("data/train.csv")
-val_dataset = ProteinDataset("data/val.csv")
+train_dataset = ProteinDataset(r"C:\Users\migue\Desktop\DTU\Fall 26\DL\PROJECT\02456-autoregressive-project\data\train.csv")
+val_dataset = ProteinDataset(r"C:\Users\migue\Desktop\DTU\Fall 26\DL\PROJECT\02456-autoregressive-project\data\val.csv")
 
 train_loader = DataLoader(
     train_dataset,
@@ -49,7 +50,6 @@ model = MLP(
     context_size=CONTEXT_SIZE,
     hidden_dim=128
 ).to(DEVICE)
-
 
 criterion = nn.CrossEntropyLoss()
 
@@ -89,7 +89,8 @@ def prepare_batch(x, x_shifted, family):
 
     return contexts[mask], targets[mask], families[mask]
 
-
+train_loss_save =[]
+val_loss_save = []
 
 for epoch in range(NUM_EPOCHS):
 
@@ -128,7 +129,7 @@ for epoch in range(NUM_EPOCHS):
         total_train_tokens += targets.numel()
 
     train_loss = total_train_loss / total_train_tokens
-
+    train_loss_save.append(train_loss)
 
     model.eval()
 
@@ -157,17 +158,24 @@ for epoch in range(NUM_EPOCHS):
     val_loss = total_val_loss / total_val_tokens
 
 
+    val_loss_save.append(val_loss)
+
     print(
         f"Epoch [{epoch + 1}/{NUM_EPOCHS}] "
         f"| Train Loss: {train_loss:.4f} "
         f"| Validation Loss: {val_loss:.4f}"
     )
 
-
-
 torch.save(
     model.state_dict(),
     "mlp_model.pth"
 )
+losses_df = pd.DataFrame({
+    "epoch": range(1, NUM_EPOCHS + 1),
+    "train_loss": train_loss_save,
+    "val_loss": val_loss_save
+})
+
+losses_df.to_csv("mlp_training_losses.csv", index=False)
 
 print("Training finished. Model saved!")
