@@ -14,7 +14,6 @@ NUM_EPOCHS = 20
 LEARNING_RATE = 0.001
 
 VOCAB_SIZE = 23
-NUM_FAMILIES = 3
 IGNORE_INDEX = -1
 
 DEVICE = torch.device(
@@ -44,9 +43,7 @@ val_loader = DataLoader(
 # Initialise model
 model = GRULanguageModel(
     vocab_size=VOCAB_SIZE,
-    num_families=NUM_FAMILIES,
     embedding_dim=64,
-    family_embedding_dim=8,
     hidden_dim=128,
     num_layers=2,
     dropout=0.15
@@ -78,19 +75,17 @@ for epoch in range(NUM_EPOCHS):
     total_train_loss = 0
     total_train_tokens = 0
 
-    print(len(train_loader))
-    run = 0
-    for x, x_shifted, y, length in train_loader:
-        run += 1
-        print(run)
+
+    for x, x_shifted, _, length in train_loader:
+
         x = x.to(DEVICE)
         x_shifted = x_shifted.to(DEVICE)
-        y = y.to(DEVICE)
+        # y = y.to(DEVICE)
 
         optimizer.zero_grad()
 
         # Forward pass, including family
-        logits = model(x, y)
+        logits = model(x)
 
         # Flatten predictions and targets
         logits = logits.reshape(-1, VOCAB_SIZE)
@@ -118,13 +113,13 @@ for epoch in range(NUM_EPOCHS):
 
     with torch.no_grad():
 
-        for x, x_shifted, y, length in val_loader:
+        for x, x_shifted, _, length in val_loader:
 
             x = x.to(DEVICE)
             x_shifted = x_shifted.to(DEVICE)
-            y = y.to(DEVICE)
+            # y = y.to(DEVICE)
 
-            logits = model(x, y)
+            logits = model(x)
 
             logits = logits.reshape(-1, VOCAB_SIZE)
             targets = x_shifted.reshape(-1)
