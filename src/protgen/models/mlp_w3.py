@@ -41,7 +41,7 @@ class MLP_nofam(nn.Module):
             hidden_dim, vocab_size
         )
 
-    def forward(self, x, family):
+    def forward(self, x, family = 3):
 
         x = self.embedding(x)
 
@@ -63,5 +63,3 @@ x = torch.randint(1, 23, (4, 3))
 family = torch.randint(0, 3, (4,))
 logits = model(x, family)
 print(logits.shape)  # expect torch.Size([4, 23])
-
-
